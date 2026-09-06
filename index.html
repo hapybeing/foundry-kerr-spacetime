@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KERR: Relativistic Spacetime & Gravitational Lensing Observatory</title>
+    <meta name="description" content="Real-time interactive Kerr black hole null and timelike geodesic raytracer, ergosphere visualization, relativistic Doppler beaming, and Penrose process simulator.">
+    <meta name="theme-color" content="#05070a">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <main id="canvas-container">
+        <canvas id="webgl-canvas"></canvas>
+        <canvas id="orbit-canvas"></canvas>
+    </main>
+
+    <header id="app-header">
+        <div class="brand-section">
+            <svg class="brand-logo" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="16" cy="16" r="14" stroke-dasharray="3 3"/>
+                <ellipse cx="16" cy="16" rx="14" ry="5.5" stroke="currentColor"/>
+                <circle cx="16" cy="16" r="5" fill="currentColor"/>
+            </svg>
+            <div class="brand-title">
+                FOUNDRY // KERR
+                <span class="brand-badge">GR-OBSERVATORY</span>
+            </div>
+        </div>
+
+        <div class="nav-center">
+            <div class="mode-switcher">
+                <button id="btn-mode-observatory" class="mode-btn active" title="Switch to WebGL2 Null Geodesic Raytracer">OBSERVATORY</button>
+                <button id="btn-mode-orbit" class="mode-btn" title="Switch to 3D Timelike Geodesic & Penrose Simulator">ORBITAL SANDBOX</button>
+            </div>
+
+            <div class="preset-selector-wrapper">
+                <span class="preset-label">PRESET:</span>
+                <select id="preset-select" class="preset-select">
+                    <option value="gargantua">M87* Gargantua (a=0.94, 17°)</option>
+                    <option value="sgra">Sagittarius A* (a=0.52, 82°)</option>
+                    <option value="extremal">Extremal Kerr (a=0.998)</option>
+                    <option value="schwarzschild">Static Schwarzschild (a=0.0)</option>
+                    <option value="penrose">Penrose Energy Extraction</option>
+                    <option value="zoomwhirl">Zoom-Whirl Resonator</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="nav-right">
+            <button id="btn-audio" class="btn-icon" title="Toggle Spacetime Web Audio Synthesizer">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                </svg>
+                <span>AUDIO OFF</span>
+            </button>
+            <button id="btn-theory" class="btn-icon" title="Mathematical & Physical Theory">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                <span>THEORY</span>
+            </button>
+            <button id="btn-toggle-controls" class="btn-icon" title="Toggle Parameter Controls">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+            </button>
+            <button id="btn-toggle-hud" class="btn-icon" title="Toggle Telemetry HUD">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M3 9h18M9 21V9"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <aside id="controls-sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-title">RELATIVISTIC PARAMETERS</span>
+        </div>
+
+        <div class="sidebar-scroll">
+            <div class="control-group">
+                <div class="group-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    SPACETIME METRIC
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Dimensionless Spin ($a/M$)</span>
+                        <span id="val-spin" class="val-badge">0.940</span>
+                    </div>
+                    <input type="range" id="slider-spin" min="-0.998" max="0.998" step="0.002" value="0.940">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="group-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg>
+                    ACCRETION DISK & BEAMING
+                </div>
+
+                <div class="toggle-row">
+                    <label for="check-lock-isco" class="toggle-label">Lock $r_{\text{in}}$ to ISCO</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="check-lock-isco" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Inner Radius ($r_{\text{in}}$)</span>
+                        <span id="val-rin" class="val-badge">2.04</span>
+                    </div>
+                    <input type="range" id="slider-rin" min="1.0" max="8.0" step="0.05" value="2.04" disabled>
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Outer Radius ($r_{\text{out}}$)</span>
+                        <span id="val-rout" class="val-badge">14.0</span>
+                    </div>
+                    <input type="range" id="slider-rout" min="6.0" max="25.0" step="0.5" value="14.0">
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Relativistic Beaming ($g^\alpha$)</span>
+                        <span id="val-beaming" class="val-badge">3.8</span>
+                    </div>
+                    <input type="range" id="slider-beaming" min="0.0" max="4.0" step="0.1" value="3.8">
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Disk Opacity</span>
+                        <span id="val-disk-opacity" class="val-badge">0.95</span>
+                    </div>
+                    <input type="range" id="slider-disk-opacity" min="0.1" max="1.0" step="0.05" value="0.95">
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Temperature Scale</span>
+                        <span id="val-disk-temp" class="val-badge">1.2</span>
+                    </div>
+                    <input type="range" id="slider-disk-temp" min="0.3" max="2.5" step="0.1" value="1.2">
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Keplerian Rotation Speed</span>
+                        <span id="val-rotation-speed" class="val-badge">1.0x</span>
+                    </div>
+                    <input type="range" id="slider-rotation-speed" min="0.0" max="3.0" step="0.1" value="1.0">
+                </div>
+
+                <div class="toggle-row">
+                    <label for="check-redshift" class="toggle-label">Gravitational & Doppler Redshift</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="check-redshift" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="group-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    GRAVITATIONAL LENSING & HUD
+                </div>
+
+                <div class="toggle-row">
+                    <label for="check-lensing" class="toggle-label">Celestial Sphere Lensing</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="check-lensing" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-row">
+                    <label for="check-star-grid" class="toggle-label">Celestial Coordinate Grid</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="check-star-grid" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-row">
+                    <label for="check-ergosphere" class="toggle-label">Ergosphere Boundary Glow</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="check-ergosphere" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Ray Integration Quality</span>
+                    </div>
+                    <select id="select-quality" class="standard-select">
+                        <option value="48">Eco / Mobile (48 steps)</option>
+                        <option value="80" selected>Balanced (80 steps)</option>
+                        <option value="128">Ultra High-Fidelity (128 steps)</option>
+                    </select>
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Viewport Resolution</span>
+                    </div>
+                    <select id="select-resolution" class="standard-select">
+                        <option value="0.5">0.5x (Fast Performance)</option>
+                        <option value="0.75">0.75x (Medium)</option>
+                        <option value="1.0" selected>1.0x (Native Retina)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="orbit-controls-section" class="control-group" style="display: none;">
+                <div class="group-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24M14.83 14.83l4.24 4.24M14.83 9.17l4.24-4.24M4.93 19.07l4.24-4.24"/></svg>
+                    ORBIT DYNAMICS PRESETS
+                </div>
+
+                <div class="action-btn-grid">
+                    <button id="btn-orbit-rosette" class="action-btn">Apsidal Rosette</button>
+                    <button id="btn-orbit-lt" class="action-btn">Lense-Thirring</button>
+                    <button id="btn-orbit-zw" class="action-btn">Zoom-Whirl</button>
+                    <button id="btn-orbit-penrose" class="action-btn">Penrose Test</button>
+                    <button id="btn-trigger-fission" class="action-btn primary">TRIGGER ERGOSPHERE FISSION</button>
+                    <button id="btn-clear-particles" class="action-btn danger">Clear Orbit Trails</button>
+                    <button id="btn-pause-sim" class="action-btn">PAUSE</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <section id="telemetry-hud">
+        <div class="hud-header">
+            <span class="hud-title">ASTROPHYSICAL TELEMETRY</span>
+            <div class="live-indicator">
+                <span class="live-dot"></span>
+                <span>ONLINE</span>
+            </div>
+        </div>
+
+        <div class="hud-grid">
+            <div class="hud-metric">
+                <span class="metric-label">DIMENSIONLESS SPIN $a_*$</span>
+                <span id="tel-spin" class="metric-value cyan">0.940 M</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">EVENT HORIZON $r_+$</span>
+                <span id="tel-rplus" class="metric-value crimson">1.341 M</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">CAUCHY HORIZON $r_-$</span>
+                <span id="tel-rminus" class="metric-value">0.659 M</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">ERGOSPHERE $r_E(\pi/2)$</span>
+                <span id="tel-ergo-eq" class="metric-value cyan">2.000 M</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">PROGRADE ISCO $r_{\text{ISCO}}$</span>
+                <span id="tel-isco" class="metric-value gold">2.044 M</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">PHOTON SPHERE $r_{\text{ph}}$</span>
+                <span id="tel-photon-sphere" class="metric-value">1.464 M</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">HORIZON $\Omega_H$</span>
+                <span id="tel-omega-h" class="metric-value">0.350 c/M</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">IRREDUCIBLE MASS $M_{\text{irr}}$</span>
+                <span id="tel-irr-mass" class="metric-value">0.825 M</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">ROTATIONAL ENERGY</span>
+                <span id="tel-rot-energy" class="metric-value green">17.5%</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">RAY BUDGET</span>
+                <span id="tel-steps" class="metric-value">80</span>
+            </div>
+        </div>
+
+        <div class="hud-footer">
+            <span>METRIC: KERR-SCHILD (G=c=M=1)</span>
+            <span id="tel-fps" class="metric-value green">60 FPS</span>
+        </div>
+    </section>
+
+    <div id="theory-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="modal-title">THEORETICAL FOUNDATIONS OF KERR SPACETIME</span>
+                <button id="btn-close-modal" class="btn-close">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <h2>1. The Kerr Metric Tensor</h2>
+                <p>
+                    A stationary, axisymmetric, uncharged rotating black hole of mass $M$ and angular momentum $J = aM$ is uniquely described in general relativity by the <strong>Kerr metric</strong> (Roy Kerr, 1963). In standard Boyer-Lindquist coordinates $(t, r, \theta, \phi)$ with $G = c = M = 1$:
+                </p>
+                <div class="formula-block">
+                    $$ds^2 = -\left(1 - \frac{2r}{\rho^2}\right) dt^2 - \frac{4ar\sin^2\theta}{\rho^2} dt\,d\phi + \frac{\rho^2}{\Delta} dr^2 + \rho^2 d\theta^2 + \left(r^2 + a^2 + \frac{2a^2 r\sin^2\theta}{\rho^2}\right)\sin^2\theta d\phi^2$$
+                </div>
+                <p>where the structural scalars are defined as:</p>
+                <div class="formula-block">
+                    $$\rho^2 = r^2 + a^2 \cos^2\theta, \quad \Delta = r^2 - 2r + a^2$$
+                </div>
+
+                <h2>2. Kerr-Schild Cartesian Formulation for GPU Raytracing</h2>
+                <p>
+                    To eliminate the coordinate singularity at the outer event horizon $r = r_+$ and avoid polar coordinate axis artifacts ($\theta = 0, \pi$), our engine formulates light ray propagation in Cartesian <strong>Kerr-Schild coordinates</strong> $x^\mu = (t, x, y, z)$:
+                </p>
+                <div class="formula-block">
+                    $$g_{\mu\nu} = \eta_{\mu\nu} + f(x, y, z) k_\mu k_\nu, \quad f = \frac{2 M r^3}{r^4 + a^2 z^2}$$
+                </div>
+                <p>where $k_\mu$ is a null vector in Minkowski spacetime ($\eta^{\mu\nu} k_\mu k_\nu = 0$). By the Sherman-Morrison theorem, the inverse metric is exact with zero matrix inversion:</p>
+                <div class="formula-block">
+                    $$g^{\mu\nu} = \eta^{\mu\nu} - f(x, y, z) k^\mu k^\nu$$
+                </div>
+                <p>Hamilton's equations for null geodesics ($H = \frac{1}{2} g^{\mu\nu} p_\mu p_\nu = 0$) are integrated via a symplectic Verlet integrator with closed-form analytic gradient $\nabla_{\vec{x}} H$.</p>
+
+                <h2>3. Horizons, Ergosphere & Frame-Dragging</h2>
+                <p>
+                    The event horizons occur at the coordinate roots $\Delta = 0$:
+                </p>
+                <div class="formula-block">
+                    $$r_\pm = M \pm \sqrt{M^2 - a^2}$$
+                </div>
+                <p>
+                    The <strong>static limit surface</strong> (outer boundary of the ergosphere) occurs where the asymptotic time-translation Killing vector becomes null ($g_{00} = 0$):
+                </p>
+                <div class="formula-block">
+                    $$r_E(\theta) = M + \sqrt{M^2 - a^2 \cos^2\theta}$$
+                </div>
+                <p>
+                    Inside the ergosphere ($r_+ < r < r_E$), the frame-dragging effect forces all physical observers to rotate with the spacetime geometry at angular velocity $\omega = -g_{t\phi}/g_{\phi\phi}$.
+                </p>
+
+                <h2>4. Relativistic Doppler Beaming & Gravitational Redshift</h2>
+                <p>
+                    Gas elements in the thin Shakura-Sunyaev accretion disk orbit on prograde circular equatorial Keplerian trajectories with angular velocity $\Omega_K = 1 / (r^{3/2} + a)$. The frequency shift factor $g$ is:
+                </p>
+                <div class="formula-block">
+                    $$g = \frac{\nu_{\text{obs}}}{\nu_{\text{em}}} = \frac{1}{u^t_{\text{em}} (1 - \Omega_K L_z)}$$
+                </div>
+                <p>
+                    By Liouville's theorem in curved spacetime, the specific intensity transforms as $I_{\text{obs}}(\nu) = g^3 I_{\text{em}}(\nu/g)$. Integrated over bolometric bandwidth, the observed radiance scales as:
+                </p>
+                <div class="formula-block">
+                    $$I_{\text{obs}} = g^4 I_{\text{em}}$$
+                </div>
+                <p>
+                    This $g^4$ factor produces the striking relativistic asymmetry: the side approaching the observer is blindingly bright and blueshifted, while the receding side is dimmed and redshifted.
+                </p>
+
+                <h2>5. The Penrose Process & Black Hole Energetics</h2>
+                <p>
+                    Inside the ergosphere, the timelike Killing vector $\xi^\mu = (\partial_t)^\mu$ becomes spacelike ($g_{00} > 0$), allowing test particles to have <em>negative energy relative to an observer at infinity</em>: $E = -p_t < 0$.
+                </p>
+                <p>
+                    Roger Penrose (1969) proved that if a parent particle with energy $E_0$ enters the ergosphere and decays into two fragments:
+                </p>
+                <div class="formula-block">
+                    $$E_0 = E_1 + E_2$$
+                </div>
+                <p>
+                    If Fragment 1 is injected onto a negative-energy retrograde orbit ($E_1 < 0$) and falls into the black hole horizon, Fragment 2 escapes to infinity with energy:
+                </p>
+                <div class="formula-block">
+                    $$E_2 = E_0 - E_1 > E_0$$
+                </div>
+                <p>
+                    The infalling negative-energy particle decreases the mass and angular momentum of the black hole, extracting up to <strong>20.7%</strong> of the particle's rest mass in a single fission event, and up to <strong>29.29%</strong> of the black hole's entire mass via the Christodoulou reducible energy formula:
+                </p>
+                <div class="formula-block">
+                    $$M_{\text{irr}} = \sqrt{\frac{r_+^2 + a^2}{2}}, \quad E_{\text{rot}} = M - M_{\text{irr}}$$
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
